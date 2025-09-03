@@ -7,7 +7,7 @@ const deployedContracts = {
   devnet: {
     Balloons: {
       address:
-        "0x181038d01ff11089769476932f12d2ba3fc4a41efbd62d34233e8e833ac44e4",
+        "0x54a833c6bbf8c18b61259dc95d918a3fd6d80502db7aff3545a70aa30220bec",
       abi: [
         {
           type: "impl",
@@ -270,6 +270,46 @@ const deployedContracts = {
               outputs: [],
               state_mutability: "external",
             },
+            {
+              type: "function",
+              name: "increase_allowance",
+              inputs: [
+                {
+                  name: "spender",
+                  type: "core::starknet::contract_address::ContractAddress",
+                },
+                {
+                  name: "added_value",
+                  type: "core::integer::u256",
+                },
+              ],
+              outputs: [
+                {
+                  type: "core::bool",
+                },
+              ],
+              state_mutability: "external",
+            },
+            {
+              type: "function",
+              name: "decrease_allowance",
+              inputs: [
+                {
+                  name: "spender",
+                  type: "core::starknet::contract_address::ContractAddress",
+                },
+                {
+                  name: "subtracted_value",
+                  type: "core::integer::u256",
+                },
+              ],
+              outputs: [
+                {
+                  type: "core::bool",
+                },
+              ],
+              state_mutability: "external",
+            },
           ],
         },
         {
@@ -371,11 +411,11 @@ const deployedContracts = {
         },
       ],
       classHash:
-        "0x6f8cc303e5e906d1d7070c9f5333205d4d3f49180ee79f8e8c365cb1d7985d5",
+        "0x59b2bee0c1ee57607fd35e4c933b9aa1c4b99dc33b1e1d27a2e490cfd6b8c60",
     },
     DEX: {
       address:
-        "0x5d63c7205aed7975cc66da472bd44bc9277b5b9a30fe7f9030a8623074933a7",
+        "0x484a33eebfcf90a7692dabf77d3855f44ec30180ff74f38ff75cbf3622d2686",
       abi: [
         {
           type: "impl",
@@ -393,6 +433,20 @@ const deployedContracts = {
             {
               name: "high",
               type: "core::integer::u128",
+            },
+          ],
+        },
+        {
+          type: "enum",
+          name: "core::bool",
+          variants: [
+            {
+              name: "False",
+              type: "()",
+            },
+            {
+              name: "True",
+              type: "()",
             },
           ],
         },
@@ -484,6 +538,10 @@ const deployedContracts = {
                   name: "strk_amount",
                   type: "core::integer::u256",
                 },
+                {
+                  name: "min_token_output",
+                  type: "core::integer::u256",
+                },
               ],
               outputs: [
                 {
@@ -498,6 +556,10 @@ const deployedContracts = {
               inputs: [
                 {
                   name: "tokens",
+                  type: "core::integer::u256",
+                },
+                {
+                  name: "min_strk_output",
                   type: "core::integer::u256",
                 },
               ],
@@ -593,6 +655,33 @@ const deployedContracts = {
               ],
               state_mutability: "view",
             },
+            {
+              type: "function",
+              name: "get_current_price",
+              inputs: [],
+              outputs: [
+                {
+                  type: "(core::integer::u256, core::integer::u256)",
+                },
+              ],
+              state_mutability: "view",
+            },
+            {
+              type: "function",
+              name: "is_price_within_bounds",
+              inputs: [
+                {
+                  name: "price_ratio",
+                  type: "core::integer::u256",
+                },
+              ],
+              outputs: [
+                {
+                  type: "core::bool",
+                },
+              ],
+              state_mutability: "view",
+            },
           ],
         },
         {
@@ -601,6 +690,10 @@ const deployedContracts = {
           inputs: [
             {
               name: "token_addr",
+              type: "core::starknet::contract_address::ContractAddress",
+            },
+            {
+              name: "strk_addr",
               type: "core::starknet::contract_address::ContractAddress",
             },
           ],
@@ -715,7 +808,7 @@ const deployedContracts = {
         },
       ],
       classHash:
-        "0x61ba03b2fb7f9bdc0b5f732afc3839cddb1496ef12a397fa741fec929359423",
+        "0x4ab55839d3423e0cf643d23012cc120af58d00f8b5327ebebb7b12f6f314c9f",
     },
   },
 } as const;
