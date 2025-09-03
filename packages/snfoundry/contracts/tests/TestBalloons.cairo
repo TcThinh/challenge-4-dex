@@ -1,11 +1,9 @@
 use contracts::Balloons::{IBalloonsDispatcher, IBalloonsDispatcherTrait};
-use openzeppelin_testing::declare_and_deploy;
 use openzeppelin_token::erc20::interface::{
     IERC20Dispatcher, IERC20DispatcherTrait, IERC20MetadataDispatcher,
     IERC20MetadataDispatcherTrait,
 };
-use openzeppelin_utils::serde::SerializedAppend;
-use snforge_std::{CheatSpan, cheat_caller_address};
+use snforge_std::{CheatSpan, cheat_caller_address, declare, ContractClassTrait, DeclareResultTrait};
 use starknet::ContractAddress;
 
 // Real wallet address deployed on Sepolia
@@ -21,10 +19,12 @@ const INITIAL_SUPPLY: u256 = 1000000000000000000000; // 1000 * 10^18
 const MINT_AMOUNT: u256 = 100000000000000000000; // 100 * 10^18
 
 fn deploy_balloons() -> ContractAddress {
-    let mut calldata = array![];
-    calldata.append_serde(OWNER);
-    calldata.append_serde(INITIAL_SUPPLY);
-    declare_and_deploy("Balloons", calldata)
+    let contract = declare("Balloons").unwrap().contract_class();
+    let constructor_calldata = array![
+        OWNER.into(), INITIAL_SUPPLY.low.into(), INITIAL_SUPPLY.high.into(),
+    ];
+    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
+    contract_address
 }
 
 #[test]
