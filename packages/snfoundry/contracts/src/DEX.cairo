@@ -6,18 +6,23 @@ pub trait IDEX<TContractState> {
     ) -> u256;
     fn get_token_to_strk_price(self: @TContractState, token_amount: u256) -> u256;
     fn get_strk_to_token_price(self: @TContractState, strk_amount: u256) -> u256;
-    fn strk_to_token(ref self: TContractState, strk_amount: u256) -> u256;
-    fn token_to_strk(ref self: TContractState, tokens: u256) -> u256;
+    // Updated swap functions with slippage protection
+    fn strk_to_token(ref self: TContractState, strk_amount: u256, min_token_output: u256) -> u256;
+    fn token_to_strk(ref self: TContractState, tokens: u256, min_strk_output: u256) -> u256;
     fn deposit(ref self: TContractState, token_amount: u256, strk_amount: u256) -> u256;
     fn withdraw(ref self: TContractState, amount: u256) -> (u256, u256);
     fn get_total_liquidity(self: @TContractState) -> u256;
     fn get_liquidity(self: @TContractState, user: starknet::ContractAddress) -> u256;
     fn get_token_reserve(self: @TContractState) -> u256;
     fn get_strk_reserve(self: @TContractState) -> u256;
+    // Price oracle and safety functions
+    fn get_current_price(self: @TContractState) -> (u256, u256); // (token_price, strk_price)
+    fn is_price_within_bounds(self: @TContractState, price_ratio: u256) -> bool;
 }
 
 #[starknet::contract]
 pub mod DEX {
+    use core::num::traits::Zero;
     use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
@@ -27,12 +32,16 @@ pub mod DEX {
     use super::IDEX;
 
     const MINIMUM_LIQUIDITY: u256 = 1000;
+    // Price bounds for circuit breakers (prevent extreme price movements)
+    const MAX_PRICE_RATIO: u256 = 10000; // 100x price change (10000/100)
+    const MIN_PRICE_RATIO: u256 = 1; // 1% price change (1/100)
 
     #[storage]
     struct Storage {
-        token: IERC20Dispatcher,
+        token: IERC20Dispatcher, // BAL token
+        strk_token: IERC20Dispatcher, // Proper STRK token (not simulated)
         reserve0: u256, // Token reserve
-        reserve1: u256, // STRK reserve (simulated)
+        reserve1: u256, // STRK reserve
         total_liquidity: u256,
         liquidity: Map<ContractAddress, u256>,
     }
@@ -74,8 +83,16 @@ pub mod DEX {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, token_addr: ContractAddress) {
+    fn constructor(
+        ref self: ContractState, token_addr: ContractAddress, strk_addr: ContractAddress,
+    ) {
+        // Validate addresses
+        assert(!token_addr.is_zero(), 'Token address cannot be zero');
+        assert(!strk_addr.is_zero(), 'STRK address cannot be zero');
+        assert(token_addr != strk_addr, 'Token addresses must differ');
+
         self.token.write(IERC20Dispatcher { contract_address: token_addr });
+        self.strk_token.write(IERC20Dispatcher { contract_address: strk_addr });
         self.reserve0.write(0);
         self.reserve1.write(0);
         self.total_liquidity.write(0);
@@ -91,10 +108,10 @@ pub mod DEX {
             let caller = get_caller_address();
             let contract_addr = get_contract_address();
 
-            // Transfer tokens from caller to DEX
+            // Transfer both tokens from caller to DEX
             self.token.read().transfer_from(caller, contract_addr, tokens);
+            self.strk_token.read().transfer_from(caller, contract_addr, strk);
 
-            // For STRK, we'll simulate by just tracking the amount
             let liquidity_minted = self._sqrt(tokens * strk);
             assert(liquidity_minted > MINIMUM_LIQUIDITY, 'DEX: insufficient liquidity');
 
@@ -146,16 +163,25 @@ pub mod DEX {
             self.price(strk_amount, strk_reserve, token_reserve)
         }
 
-        fn strk_to_token(ref self: ContractState, strk_amount: u256) -> u256 {
+        fn strk_to_token(
+            ref self: ContractState, strk_amount: u256, min_token_output: u256,
+        ) -> u256 {
             assert(strk_amount > 0, 'DEX: invalid strk amount');
 
             let caller = get_caller_address();
+            let contract_addr = get_contract_address();
             let token_reserve = self.reserve0.read();
             let strk_reserve = self.reserve1.read();
 
             let token_output = self.price(strk_amount, strk_reserve, token_reserve);
             assert(token_output > 0, 'DEX: insufficient output');
             assert(token_reserve >= token_output, 'DEX: insufficient liquidity');
+
+            // Slippage protection
+            assert(token_output >= min_token_output, 'DEX: slippage too high');
+
+            // Transfer STRK from user to DEX
+            self.strk_token.read().transfer_from(caller, contract_addr, strk_amount);
 
             // Update reserves
             self.reserve0.write(token_reserve - token_output);
@@ -178,7 +204,7 @@ pub mod DEX {
             token_output
         }
 
-        fn token_to_strk(ref self: ContractState, tokens: u256) -> u256 {
+        fn token_to_strk(ref self: ContractState, tokens: u256, min_strk_output: u256) -> u256 {
             assert(tokens > 0, 'DEX: invalid token amount');
 
             let caller = get_caller_address();
@@ -190,12 +216,18 @@ pub mod DEX {
             assert(strk_output > 0, 'DEX: insufficient output');
             assert(strk_reserve >= strk_output, 'DEX: insufficient liquidity');
 
+            // Slippage protection
+            assert(strk_output >= min_strk_output, 'DEX: slippage too high');
+
             // Transfer tokens from user to DEX
             self.token.read().transfer_from(caller, contract_addr, tokens);
 
             // Update reserves
             self.reserve0.write(token_reserve + tokens);
             self.reserve1.write(strk_reserve - strk_output);
+
+            // Transfer STRK to user
+            self.strk_token.read().transfer(caller, strk_output);
 
             self
                 .emit(
@@ -244,6 +276,7 @@ pub mod DEX {
 
             // Transfer tokens
             self.token.read().transfer_from(caller, contract_addr, actual_token);
+            self.strk_token.read().transfer_from(caller, contract_addr, actual_strk);
 
             // Update reserves and liquidity
             self.reserve0.write(token_reserve + actual_token);
@@ -290,6 +323,7 @@ pub mod DEX {
 
             // Transfer tokens
             self.token.read().transfer(caller, token_amount);
+            self.strk_token.read().transfer(caller, strk_amount);
 
             self
                 .emit(
@@ -319,6 +353,26 @@ pub mod DEX {
         fn get_strk_reserve(self: @ContractState) -> u256 {
             self.reserve1.read()
         }
+
+        fn get_current_price(self: @ContractState) -> (u256, u256) {
+            let token_reserve = self.reserve0.read();
+            let strk_reserve = self.reserve1.read();
+
+            if token_reserve == 0 || strk_reserve == 0 {
+                return (0, 0);
+            }
+
+            // Return price as (token_price_in_strk, strk_price_in_token)
+            // Multiplied by 10^18 for precision
+            let token_price = (strk_reserve * 1000000000000000000) / token_reserve;
+            let strk_price = (token_reserve * 1000000000000000000) / strk_reserve;
+
+            (token_price, strk_price)
+        }
+
+        fn is_price_within_bounds(self: @ContractState, price_ratio: u256) -> bool {
+            price_ratio >= MIN_PRICE_RATIO && price_ratio <= MAX_PRICE_RATIO
+        }
     }
 
     #[generate_trait]
@@ -327,7 +381,10 @@ pub mod DEX {
             if y > 3 {
                 let mut z = y;
                 let mut x = y / 2 + 1;
-                while x < z {
+                while x != z {
+                    if x >= z {
+                        break;
+                    }
                     z = x;
                     x = (y / x + x) / 2;
                 }
