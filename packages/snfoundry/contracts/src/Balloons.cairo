@@ -26,6 +26,13 @@ pub trait IBalloons<TContractState> {
     fn burn(ref self: TContractState, amount: u256);
     fn get_owner(self: @TContractState) -> starknet::ContractAddress;
     fn transfer_ownership(ref self: TContractState, new_owner: starknet::ContractAddress);
+    // Better UX alternatives to approve race condition protection
+    fn increase_allowance(
+        ref self: TContractState, spender: starknet::ContractAddress, added_value: u256,
+    ) -> bool;
+    fn decrease_allowance(
+        ref self: TContractState, spender: starknet::ContractAddress, subtracted_value: u256,
+    ) -> bool;
 }
 
 #[starknet::contract]
@@ -38,8 +45,9 @@ pub mod Balloons {
     use starknet::{ContractAddress, get_caller_address};
     use super::{IBalloons, IERC20};
 
-    // Constants for safe math
+    // Constants for safe math and token economics
     const MAX_U256: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    const MAX_SUPPLY: u256 = 1000000000000000000000000000; // 1 billion tokens max (1B * 10^18)
 
     #[storage]
     struct Storage {
@@ -91,6 +99,9 @@ pub mod Balloons {
         // Validate recipient is not zero address
         assert(!recipient.is_zero(), 'Recipient cannot be zero');
         assert(initial_supply > 0, 'Initial supply must be > 0');
+
+        // Upper bound check to prevent accidental huge mints
+        assert(initial_supply <= MAX_SUPPLY, 'Initial supply exceeds maximum');
 
         // Initialize token metadata
         self.name.write("Balloons");
@@ -173,10 +184,8 @@ pub mod Balloons {
             // Validate spender is not zero address
             assert(!spender.is_zero(), 'Spender cannot be zero');
 
-            // Approve race condition protection
-            let current_allowance = self.allowances.read((owner, spender));
-            assert(amount == 0 || current_allowance == 0, 'Must reset allowance to 0 first');
-
+            // Set allowance (removed overly restrictive race condition protection)
+            // Users can now use increaseAllowance/decreaseAllowance for safer operations
             self.allowances.write((owner, spender), amount);
 
             self.emit(Approval { owner, spender, value: amount });
@@ -251,6 +260,42 @@ pub mod Balloons {
 
             // Emit event
             self.emit(OwnershipTransferred { previous_owner: current_owner, new_owner: new_owner });
+        }
+
+        fn increase_allowance(
+            ref self: ContractState, spender: ContractAddress, added_value: u256,
+        ) -> bool {
+            let owner = get_caller_address();
+            assert(!spender.is_zero(), 'Spender cannot be zero');
+            assert(added_value > 0, 'Added value must be > 0');
+
+            let current_allowance = self.allowances.read((owner, spender));
+
+            // Check for overflow
+            assert(MAX_U256 - current_allowance >= added_value, 'Allowance overflow');
+
+            let new_allowance = current_allowance + added_value;
+            self.allowances.write((owner, spender), new_allowance);
+
+            self.emit(Approval { owner, spender, value: new_allowance });
+            true
+        }
+
+        fn decrease_allowance(
+            ref self: ContractState, spender: ContractAddress, subtracted_value: u256,
+        ) -> bool {
+            let owner = get_caller_address();
+            assert(!spender.is_zero(), 'Spender cannot be zero');
+            assert(subtracted_value > 0, 'Subtracted value must be > 0');
+
+            let current_allowance = self.allowances.read((owner, spender));
+            assert(current_allowance >= subtracted_value, 'Decreased allowance below zero');
+
+            let new_allowance = current_allowance - subtracted_value;
+            self.allowances.write((owner, spender), new_allowance);
+
+            self.emit(Approval { owner, spender, value: new_allowance });
+            true
         }
     }
 
