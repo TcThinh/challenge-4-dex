@@ -25,11 +25,16 @@ export const menuLinks: HeaderMenuLink[] = [
     label: "Home",
     href: "/",
   },
-  {
-    label: "Debug Contracts",
-    href: "/debug",
-    icon: <BugAntIcon className="h-4 w-4" />,
-  },
+  // {
+  // label: "Debug Contracts",
+  // href: "/debug",
+  // icon: <BugAntIcon className="h-4 w-4" />,
+  // },
+  // { label: "Home", href: "/" },
+  // { label: "Swap", href: "/#swap" },
+  // { label: "Pool", href: "/#pool" },
+  // { label: "Analytics", href: "/analytics" },
+  // { label: "Debug", href: "/debug" },
 ];
 
 export const HeaderMenuLinks = () => {
@@ -42,10 +47,10 @@ export const HeaderMenuLinks = () => {
   }, [theme]);
   return (
     <>
-      {menuLinks.map(({ label, href, icon }) => {
+      {menuLinks.map(({ label, href, icon }, i) => {
         const isActive = pathname === href;
         return (
-          <li key={href}>
+          <li key={href + i}>
             <Link
               href={href}
               passHref
@@ -74,7 +79,7 @@ export const Header = () => {
 
   useOutsideClick(
     burgerMenuRef,
-    useCallback(() => setIsDrawerOpen(false), []),
+    useCallback(() => setIsDrawerOpen(false), [])
   );
 
   const { targetNetwork } = useTargetNetwork();

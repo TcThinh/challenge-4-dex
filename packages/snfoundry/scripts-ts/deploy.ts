@@ -73,8 +73,8 @@ const initializeDEX = async (
   balloonsAddress: string,
   dexAddress: string
 ): Promise<void> => {
-  console.log("\n🎈 Initializing DEX with liquidity...");
-  console.log(`💧 Adding initial liquidity: 1000 BAL + 1000 STRK`);
+  console.log("\n Initializing DEX with liquidity...");
+  console.log(`Adding initial liquidity: 1000 BAL + 1000 STRK`);
 
   try {
     // Step 1: Approve DEX to spend Balloons tokens

@@ -7,7 +7,7 @@ const deployedContracts = {
   devnet: {
     Balloons: {
       address:
-        "0x54a833c6bbf8c18b61259dc95d918a3fd6d80502db7aff3545a70aa30220bec",
+        "0x53d034adf7ea8240893838626e175ee9976c10b4eb45bafd5b0791c107843f0",
       abi: [
         {
           type: "impl",
@@ -415,7 +415,7 @@ const deployedContracts = {
     },
     DEX: {
       address:
-        "0x484a33eebfcf90a7692dabf77d3855f44ec30180ff74f38ff75cbf3622d2686",
+        "0x657911e784b10f25b7bba2a6f83cdcda40adf359cbc525111660afba12cc6d1",
       abi: [
         {
           type: "impl",
@@ -814,7 +814,7 @@ const deployedContracts = {
   sepolia: {
     Balloons: {
       address:
-        "0x5ba8cbf117555dbbb2274d74b7a9898ace2d593ad03c416a4d6822e7882424d",
+        "0x22a9cc095162b920dd2edc4a77e995c522d01c9e42b7616f513c9c26c4beba2",
       abi: [
         {
           type: "impl",
@@ -1222,7 +1222,7 @@ const deployedContracts = {
     },
     DEX: {
       address:
-        "0x7ff79abe530564e9ecf64ec11157e25eab74580d2d7bf6522ac572032fec96c",
+        "0x497c21f5e6e110a6edb454b077d2554e9b0fcf80a117a545fb3a12472502b80",
       abi: [
         {
           type: "impl",
