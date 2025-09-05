@@ -1,10 +1,10 @@
 import { useCallback, useState, useEffect } from "react";
 import { useDebounceValue } from "usehooks-ts";
-import { CommonInputProps, InputBase } from "~~/components/scaffold-stark";
 import { Address } from "@starknet-react/chains";
 import { isAddress } from "~~/utils/scaffold-stark/common";
 import Image from "next/image";
 import { blo } from "blo";
+import { CommonInputProps, InputBase } from ".";
 
 /**
  * Avatar component for address input
@@ -65,7 +65,7 @@ export const AddressInput = ({
 
       onChange(newValue);
     },
-    [onChange],
+    [onChange]
   );
 
   return (

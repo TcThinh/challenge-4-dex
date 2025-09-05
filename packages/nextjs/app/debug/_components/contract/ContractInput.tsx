@@ -1,7 +1,6 @@
 "use client";
 
 import { Dispatch, SetStateAction } from "react";
-import { InputBase, IntegerInput } from "~~/components/scaffold-stark";
 import { AbiParameter } from "~~/utils/scaffold-stark/contract";
 import {
   addError,
@@ -23,6 +22,7 @@ import {
 import { Struct } from "./Struct";
 import { Abi } from "abi-wan-kanabi";
 import { ArrayInput } from "./Array";
+import { InputBase, IntegerInput } from "~~/components/scaffold-stark/Input";
 
 type ContractInputProps = {
   abi?: Abi;
@@ -114,7 +114,7 @@ export const ContractInput = ({
           // @ts-ignore
           abiMember={abi?.find(
             // @ts-ignore
-            (member) => member.name === paramType.type,
+            (member) => member.name === paramType.type
           )}
           isDisabled={isDisabled}
         />

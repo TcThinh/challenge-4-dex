@@ -4,19 +4,15 @@ import { useEffect, useState } from "react";
 import { Address as AddressType, devnet } from "@starknet-react/chains";
 import { BanknotesIcon } from "@heroicons/react/24/outline";
 import dynamic from "next/dynamic";
-import {
-  Address,
-  AddressInput,
-  Balance,
-  StarkInput,
-} from "~~/components/scaffold-stark";
+import { Address, Balance } from "~~/components/scaffold-stark";
 import { useNetwork, useProvider } from "@starknet-react/core";
 import { mintStrk } from "~~/services/web3/faucet";
 import { notification } from "~~/utils/scaffold-stark";
+import { AddressInput, StarkInput } from "./Input";
 
 const GenericModal = dynamic(
   () => import("./CustomConnectButton/GenericModal"),
-  { ssr: false },
+  { ssr: false }
 );
 
 /**
@@ -64,7 +60,7 @@ export const Faucet = () => {
           </>,
           {
             duration: 5000,
-          },
+          }
         );
       }
     };
@@ -120,14 +116,14 @@ export const Faucet = () => {
               <AddressInput
                 placeholder="Destination Address"
                 value={inputAddress ?? ""}
-                onChange={(value) => setInputAddress(value as AddressType)}
+                onChange={(value: any) => setInputAddress(value as AddressType)}
               />
             </div>
             <div className="flex flex-col gap-2">
               <StarkInput
                 placeholder="Amount to send"
                 value={sendValue}
-                onChange={(value) => setSendValue(value)}
+                onChange={(value: any) => setSendValue(value)}
               />
             </div>
             <button

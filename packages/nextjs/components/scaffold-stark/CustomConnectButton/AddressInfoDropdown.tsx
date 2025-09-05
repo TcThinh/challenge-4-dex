@@ -12,7 +12,7 @@ import {
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useLocalStorage } from "usehooks-ts";
-import { BlockieAvatar, isENS } from "~~/components/scaffold-stark";
+import { BlockieAvatar } from "~~/components/scaffold-stark";
 import { useOutsideClick } from "~~/hooks/scaffold-stark";
 import { BurnerConnector, burnerAccounts } from "@scaffold-stark/stark-burner";
 import { getTargetNetworks, notification } from "~~/utils/scaffold-stark";
@@ -22,6 +22,7 @@ import { getStarknetPFPIfExists } from "~~/utils/profile";
 import { useScaffoldStarkProfile } from "~~/hooks/scaffold-stark/useScaffoldStarkProfile";
 import { useTheme } from "next-themes";
 import { default as NextImage } from "next/image";
+import { isENS } from "../Input";
 
 const allowedNetworks = getTargetNetworks();
 
@@ -57,7 +58,7 @@ export const AddressInfoDropdown = ({
 
   function handleConnectBurner(
     e: React.MouseEvent<HTMLButtonElement>,
-    ix: number,
+    ix: number
   ) {
     const connector = connectors.find((it) => it.id == "burner-wallet");
     if (connector && connector instanceof BurnerConnector) {
@@ -73,7 +74,7 @@ export const AddressInfoDropdown = ({
     { id: "" },
     {
       initializeWithValue: false,
-    },
+    }
   );
 
   const [, setWasDisconnectedManually] = useLocalStorage<boolean>(
@@ -81,7 +82,7 @@ export const AddressInfoDropdown = ({
     false,
     {
       initializeWithValue: false,
-    },
+    }
   );
 
   const handleDisconnect = () => {
@@ -251,7 +252,7 @@ export const AddressInfoDropdown = ({
                                 ></BlockieAvatar>
                                 {`${burnerAcc.accountAddress.slice(
                                   0,
-                                  6,
+                                  6
                                 )}...${burnerAcc.accountAddress.slice(-4)}`}
                               </button>
                             </div>
@@ -263,7 +264,7 @@ export const AddressInfoDropdown = ({
                 </div>
                 <div className="backdrop-blur fixed inset-0 z-40"></div>
               </>,
-              document.body,
+              document.body
             )}
 
           {/* TODO: reinstate if needed */}
